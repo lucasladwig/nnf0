@@ -1,4 +1,4 @@
-# nn_from_zero
+# nnf0 - Neural Network from Scratch
 
 
 
