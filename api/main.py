@@ -33,9 +33,18 @@ class Rede:
     # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
     # --- Linear ---
     def linear_activ(self, x: float, a: float = 1):
+        """Linear activation function.
+            Params:
+            x: input vector
+            a: linear constant
+        """
         return a * x
 
     def linear_deriv(self, a: float = 1):
+        """Linear activation function derivative, used for backpropagation.
+            Params:
+            a: linear constant
+        """
         return a
 
     # --- Sigmoid ---
