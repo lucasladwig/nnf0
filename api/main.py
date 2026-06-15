@@ -1,125 +1,152 @@
 import numpy as np
 
+
 class Rede:
-    def __init__(self, dict_hiperparameters):
-        self.network_matrix = np.empty(0, dtype=object)
-        self.activation_functions_dict = {
-            "linear": self.linearActFunction,
-            "sigmoid": self.sigmoidActFunction,
-            "tanh": self.tanhActFunction,
-            "relu": self.reluActFunction,
-            "leaky_relu": self.leakyReluActFunction,
-            "parametric_relu": self.parametricReluActFuntion,
-            "elu": self.eluActFunction,
-            "swish": self.swishActFunction,
-            "softmax": self.softmaxActFunction
+    def __init__(self, learning_rate: float, hyper_parameters: dict):
+        self.network = np.empty(0, dtype=object)
+        self.learning_rate = learning_rate
+        self.activation_functions = {
+            "linear": self.linear_activ,
+            "sigmoid": self.sigmoid_activ,
+            "tanh": self.tanh_activ,
+            "relu": self.relu_activ,
+            "leaky_relu": self.leaky_relu_activ,
+            "parametric_relu": self.param_relu_activ,
+            "elu": self.elu_activ,
+            "swish": self.swish_activ,
+            "softmax": self.softmax_activ
         }
 
-    def linearActFunction(self):
-        return
-    
-    def derivativeLinear(self):
+    # Teste de dict das funções com suas derivadas direto no valor do dict
+        # self.activation_functions = {
+        #     "linear": (self.linear_activ, self.linear_deriv),
+        #     "sigmoid": (self.sigmoid_activ, self.sigmoid_deriv),
+        #     "tanh": (self.tanh_activ, self.tanh_deriv),
+        #     "relu": (self.relu_activ, self.relu_deriv),
+        #     "leaky_relu": (self.leaky_relu_activ, self.leaky_relu_deriv),
+        #     "parametric_relu": (self.param_relu_activ, self.param_relu_deriv),
+        #     "elu": (self.elu_activ, self.elu_deriv),
+        #     "swish": (self.swish_activ, self.swish_deriv),
+        #     "softmax": (self.softmax_activ, self.softmax_deriv)
+        # }
+
+    # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
+    # --- Linear ---
+    def linear_activ(self):
         return
 
-    def sigmoidActFunction(self):
-        return
-    
-    def derivativeSigmoid(self):
+    def linear_deriv(self):
         return
 
-    def tanhActFunction(self):
+    # --- Sigmoid ---
+    def sigmoid_activ(self):
         return
 
-    def derivativeTanh(self):
+    def sigmoid_deriv(self):
         return
 
-    def reluActFunction(self):
-        return
-    
-    def derivativeRelu(self):
+    # --- TanH ---
+    def tanh_activ(self):
         return
 
-    def leakyReluActFunction(self):    
+    def tanh_deriv(self):
         return
-    
-    def derivativeLeakyRelu(self):
+
+    # --- ReLU ---
+    def relu_activ(self):
         return
-    
-    def parametricReluActFuntion(self):
+
+    def relu_deriv(self):
         return
-    
-    def derivativeParametricRelu(self):
+
+    # --- Leaky ReLU ---
+    def leaky_relu_activ(self):
         return
-    
-    def eluActFunction(self):
+
+    def leaky_relu_deriv(self):
         return
-    
-    def derivativeELU(self):
+
+    # --- Parameter ReLU ---
+    def param_relu_activ(self):
         return
-    
-    def swishActFunction(self, x_input_value):
+
+    def param_relu_deriv(self):
+        return
+
+    # --- ELU ---
+    def elu_activ(self):
+        return
+
+    def elu_deriv(self):
+        return
+
+    # --- Swish ---
+    def swish_activ(self, x_input_value):
         y_output_value = x_input_value * (1 / (1 + np.exp(-x_input_value)))
         return y_output_value
-    
+
     def derivativeSwish(self):
         return
-    
-    def softmaxActFunction(self, x_input_vector):
+
+    # --- Softmax ---
+    def softmax_activ(self, x_input_vector):
         exp_values_vector = np.exp(x_input_vector)
         exp_values_vector = exp_values_vector / np.sum(exp_values_vector)
         return exp_values_vector
-    
-'''
-    eu fiz a derivada da softmax, 
-    mas pelo que li na web essa função n importa muito 
-    pois já está incorporada no cálculo da cross entropy categorica
 
-    def derivativeSoftmax(self, softmax_vector): 
+    def softmax_deriv(self, softmax_vector):
+        # talvez não seja necesária
         sigma = np.array(softmax_vector)
         jacobian_matrix = np.diag(sigma) - np.outer(sigma, sigma)
         return jacobian_matrix
-'''
 
-    def squareErrorCostFunction(self):
+    # === COST FUNCTIONS ===
+    def mean_squared_error(self):
         return
-    
-    def crossEntropyCostFunction(self):
+
+    def binary_cross_entropy(self):
         return
-    
-    def categoricCrossEntropyCostFunction(self, y_predicted_vector, y_true_vector):
+
+    def categoric_cross_entropy(self, y_predicted_vector, y_true_vector):
         loss_value = -np.sum(y_true_vector * np.log(y_predicted_vector))
         return loss_value
-    
-    def feedFoward(self):
+
+    # === FEED FORWARD ===
+    def feed_forward(self):
         return
 
-    def backPropagation(self):
+    # === BACKPROPAGATION ===
+    def back_propagation(self):
         return
-    
-    def gradientDescent(self):
-        return
-    
-    def linearCombinerNeuron(self, k_number_neurons_in_layer, w_weight_vector, x_inputs_vector):
-        v_sum_value = 0
-        for i in range(k_number_neurons_in_layer):
-            v_sum_value  += w_weight_vector[i]*x_inputs_vector[i]
-        return v_sum_value 
-    
-    '''
-    Aqui a gente está passando o nome da função a ser chamada (ex. "relu"), que será usada como chave do dicionário de funções
-    que armazena uma referência ao método correspondente. Então quando a estrutura de dicionário chamar essa referência, os parênteses
-    do lado que armazenam o valor de input serão passados para o método 'invocado'.
 
-    ex:
-    no código ficará                --> self.activation_functions_dict["relu"](-0.5) 
-    mas isso vai se transformar em  --> self.reluActFunction(x)
-    e retornará                     --> 0
-    '''
-    def useActFunction(self, function_name_string, v_sum_value):
-        y_output_value = self.activation_functions_dict[function_name_string](v_sum_value)
-        return y_output_value
-    
-    def neuronIteration(self, k_number_neurons_in_layer, w_weight_vector, x_inputs_vector, function_name_string):
-        v_sum_value = self.linearCombinerNeuron(k_number_neurons_in_layer, w_weight_vector, x_inputs_vector)
-        y_output_value = self.useActFunction(function_name_string, v_sum_value)
-        return y_output_value
+    # === GRADIENT DESCENT ===
+    def gradient_descent(self):
+        return
+
+    # === NEURON LOGIC ===
+    def linear_combination(self, k: int, w: np.array, x: np.array):
+        """
+            Params:
+                k: number of neurons in layer
+                w: weight vector
+                x: input vector
+        """
+        v_sum = 0
+        for i in range(k):
+            v_sum += w[i] * x[i]
+        return v_sum
+
+    def activate_neuron(self, func_name: str, v_sum: float):
+        y_output = self.activation_functions[func_name](v_sum)
+        return y_output
+
+    def neuron_iteration(self, k, w, x, func_name):
+        """
+            Params:
+                k: number of neurons in layer
+                w: weight vector
+                x: input vector
+        """
+        v_sum = self.linear_combination(k, w, x)
+        y_output = self.activate_neuron(func_name, v_sum)
+        return y_output
