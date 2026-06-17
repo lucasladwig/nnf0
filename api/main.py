@@ -53,11 +53,11 @@ class Rede:
         return
 
     # --- ReLU ---
-    def relu_activ(self):
-        return
+    def relu_activ(self, x_input_value):
+        return np.maximum(0, x_input_value)
 
-    def relu_deriv(self):
-        return
+    def relu_deriv(self, x_input_value):
+        return np.where(x_input_value > 0, 1.0, 0.0)
 
     # --- Leaky ReLU ---
     def leaky_relu_activ(self):
