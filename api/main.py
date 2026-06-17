@@ -85,7 +85,7 @@ class Rede:
         y_output_value = x_input_value * (1 / (1 + np.exp(-x_input_value)))
         return y_output_value
 
-    def derivativeSwish(self):
+    def swish_deriv(self):
         return
 
     # --- Softmax ---
