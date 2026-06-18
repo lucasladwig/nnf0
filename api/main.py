@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Rede:
-    def __init__(self, learning_rate: float, hyper_parameters: dict):
+    def __init__(self, learning_rate: float):
         self.network = np.empty(0, dtype=object)
         self.learning_rate = learning_rate
         self.activation_functions = {
@@ -16,19 +16,20 @@ class Rede:
             "swish": self.swish_activ,
             "softmax": self.softmax_activ
         }
+        self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
 
     # Teste de dict das funções com suas derivadas direto no valor do dict
-        # self.activation_functions = {
-        #     "linear": (self.linear_activ, self.linear_deriv),
-        #     "sigmoid": (self.sigmoid_activ, self.sigmoid_deriv),
-        #     "tanh": (self.tanh_activ, self.tanh_deriv),
-        #     "relu": (self.relu_activ, self.relu_deriv),
-        #     "leaky_relu": (self.leaky_relu_activ, self.leaky_relu_deriv),
-        #     "parametric_relu": (self.param_relu_activ, self.param_relu_deriv),
-        #     "elu": (self.elu_activ, self.elu_deriv),
-        #     "swish": (self.swish_activ, self.swish_deriv),
-        #     "softmax": (self.softmax_activ, self.softmax_deriv)
-        # }
+        self.activation_functions_deriv = {
+             "linear": self.linear_deriv,
+             "sigmoid": self.sigmoid_deriv,
+             "tanh": self.tanh_deriv,
+             "relu": self.relu_deriv,
+             "leaky_relu": self.leaky_relu_deriv,
+             "parametric_relu": self.param_relu_deriv,
+             "elu": self.elu_deriv,
+             "swish": self.swish_deriv,
+             "softmax": self.softmax_deriv
+        }
 
     # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
     # --- Linear ---
@@ -70,11 +71,11 @@ class Rede:
         return np.where(x_input_value > 0, 1.0, 0.0)
 
     # --- Leaky ReLU ---
-    def leaky_relu_activ(self):
-        return
+    def leaky_relu_activ(self, x_input_value):
+        return np.maximum(self.leaky_relu_apha * x_input_value, x_input_value)
 
-    def leaky_relu_deriv(self):
-        return
+    def leaky_relu_deriv(self, x_input_value):
+        return np.where(x_input_value > 0, 1.0, self.leaky_relu_apha)
 
     # --- Parameter ReLU ---
     def param_relu_activ(self):
