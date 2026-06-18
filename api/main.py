@@ -48,11 +48,12 @@ class Rede:
         return a
 
     # --- Sigmoid ---
-    def sigmoid_activ(self):
-        return
+    def sigmoid_activ(self, x_input_value):
+        return 1 / (1 + np.exp(-x_input_value))
 
-    def sigmoid_deriv(self):
-        return
+    def sigmoid_deriv(self, x_input_value):
+        s = self.sigmoid_activ(x_input_value)
+        return s * (1 - s)
 
     # --- TanH ---
     def tanh_activ(self):
