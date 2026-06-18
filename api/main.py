@@ -2,8 +2,8 @@ import numpy as np
 
 
 class Rede:
-    def __init__(self, learning_rate: float):
-        self.network = np.empty(0, dtype=object)
+    def __init__(self, learning_rate: float, atributes = None, labels = None):
+        self.network = []
         self.learning_rate = learning_rate
         self.activation_functions = {
             "linear": self.linear_activ,
@@ -16,9 +16,6 @@ class Rede:
             "swish": self.swish_activ,
             "softmax": self.softmax_activ
         }
-        self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
-
-    # Teste de dict das funções com suas derivadas direto no valor do dict
         self.activation_functions_deriv = {
              "linear": self.linear_deriv,
              "sigmoid": self.sigmoid_deriv,
@@ -30,6 +27,11 @@ class Rede:
              "swish": self.swish_deriv,
              "softmax": self.softmax_deriv
         }
+        self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
+        self.layers_activation_func_list = []
+        self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
+        self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
+        self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
 
     # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
     # --- Linear ---
@@ -161,3 +163,24 @@ class Rede:
         v_sum = self.linear_combination(k, w, x)
         y_output = self.activate_neuron(func_name, v_sum)
         return y_output
+
+    # === LAYER LOGIC ===
+    def create_initial_layer(self, num_neurons: int, func_name: str):
+        quantity_of_inputs = self.atributes.shape[1] + 1 # quantidade de atributos, mais 1 para o bias.
+        self.create_layer(num_neurons, func_name, quantity_of_inputs)
+
+    def create_hidden_layer(self, num_neurons: int, func_name: str):
+        quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
+        self.create_layer(num_neurons, func_name, quantity_of_inputs)
+
+    def create_layer(self, num_neurons: int, func_name: str, quantity_of_inputs: int):
+        w_matrix = [] # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
+        for neuron in range(num_neurons):
+            if self.weights_initialization_mode == "zeros":
+                w_vector_aux = [0.0] * quantity_of_inputs
+            else:
+                w_vector_aux = np.random.rand(quantity_of_inputs).tolist()
+            w_matrix.append(w_vector_aux) # lista de listas
+        camada = np.array(w_matrix, dtype=float) # transforma a lista de listas em matriz numpy, onde cada linha representa os pesos de um neurônio.
+        self.network.append(camada)
+        self.layers_activation_func_list.append(func_name)
