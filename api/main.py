@@ -125,8 +125,6 @@ class Rede:
         return loss_value
 
     # === FEED FORWARD ===
-    def feed_forward(self):
-        return
 
     # === BACKPROPAGATION ===
     def back_propagation(self):
@@ -184,3 +182,22 @@ class Rede:
         camada = np.array(w_matrix, dtype=float) # transforma a lista de listas em matriz numpy, onde cada linha representa os pesos de um neurônio.
         self.network.append(camada)
         self.layers_activation_func_list.append(func_name)
+    
+    def calc_layer_output(self, layer_index: int, input_vector: np.array):
+        layer = self.network[layer_index] #pega a matriz de pesos da camada em questão
+        func_name = self.layers_activation_func_list[layer_index]
+        output_vector = []
+        for neuron_index in range(layer.shape[0]):
+            linear_combination_neuron = (layer[neuron_index].dot(input_vector)) # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
+            output_vector.append(self.activate_neuron(func_name, linear_combination_neuron)) # aplica a função de ativação à combinação linear, resultando na saída do neurônio
+        output_vector.append(1.0) # adiciona o valor do bias
+        return np.array(output_vector)
+    
+    def feedforward(self, input_vector: np.array):
+        print("=== INICIANDO FEEDFORWARD ===")
+        output_vector = input_vector
+        print("input_vector da rede: ", output_vector)
+        for layer_index in range(len(self.network)):
+            output_vector = self.calc_layer_output(layer_index, output_vector)
+            print("camada ", layer_index, " - output_vector: ", output_vector)
+        return output_vector
