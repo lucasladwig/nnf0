@@ -27,6 +27,11 @@ class Rede:
              "swish": self.swish_deriv,
              "softmax": self.softmax_deriv
         }
+        self.cost_functions = {
+            "mean_squared_error": self.squared_error,
+            "binary_cross_entropy": self.binary_cross_entropy,
+            "categoric_cross_entropy": self.categoric_cross_entropy
+        }
         self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
         self.layers_activation_func_list = []
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
@@ -114,17 +119,17 @@ class Rede:
         return jacobian_matrix
 
     # === COST FUNCTIONS ===
-    def mean_squared_error(self):
-        return
+    def squared_error(self, y_predicted_vector, y_true_vector):
+        loss_value = (y_true_vector[0] - y_predicted_vector[0]) ** 2
+        return loss_value
 
-    def binary_cross_entropy(self):
-        return
+    def binary_cross_entropy(self, y_predicted_vector, y_true_vector):
+        loss_value = -(y_true_vector[0] * np.log(y_predicted_vector[0]) + ((1 - y_true_vector[0]) * np.log(1 - y_predicted_vector[0])))
+        return loss_value
 
     def categoric_cross_entropy(self, y_predicted_vector, y_true_vector):
         loss_value = -np.sum(y_true_vector * np.log(y_predicted_vector))
         return loss_value
-
-    # === FEED FORWARD ===
 
     # === BACKPROPAGATION ===
     def back_propagation(self):
@@ -171,6 +176,10 @@ class Rede:
         quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
         self.create_layer(num_neurons, func_name, quantity_of_inputs)
 
+    def create_output_layer(self, num_neurons: int, func_name: str, cost_func_name: str):
+        quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
+        self.create_layer(num_neurons, func_name, quantity_of_inputs)
+
     def create_layer(self, num_neurons: int, func_name: str, quantity_of_inputs: int):
         w_matrix = [] # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
         for neuron in range(num_neurons):
@@ -193,6 +202,7 @@ class Rede:
         output_vector.append(1.0) # adiciona o valor do bias
         return np.array(output_vector)
     
+    # === FEED FORWARD ===
     def feedforward(self, input_vector: np.array):
         print("=== INICIANDO FEEDFORWARD ===")
         output_vector = input_vector
