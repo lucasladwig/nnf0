@@ -34,6 +34,7 @@ class Rede:
             "categoric_cross_entropy": self.categoric_cross_entropy
         }
         self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
+        self.elu_alpha = 1.0 # valor padrão para a elu. Basta mudar o valor do atributo.
         self.chosen_cost_function = None
         self.layers_activation_func_list = []
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
@@ -66,11 +67,12 @@ class Rede:
         return s * (1 - s)
 
     # --- TanH ---
-    def tanh_activ(self):
-        return
+    def tanh_activ(self, x_input_value):
+        return (np.exp(x_input_value) - np.exp(-x_input_value)) / (np.exp(x_input_value) + np.exp(-x_input_value))
 
-    def tanh_deriv(self):
-        return
+    def tanh_deriv(self, x_input_value):
+        t = self.tanh_activ(x_input_value)
+        return 1 - t ** 2
 
     # --- ReLU ---
     def relu_activ(self, x_input_value):
@@ -112,19 +114,20 @@ class Rede:
         return 0.0 if x > 0 else x
 
     # --- ELU ---
-    def elu_activ(self):
-        return
+    def elu_activ(self, x_input_value):
+        return np.where(x_input_value > 0, x_input_value, self.elu_alpha * (np.exp(x_input_value) - 1))
 
-    def elu_deriv(self):
-        return
+    def elu_deriv(self, x_input_value):
+        return np.where(x_input_value > 0, 1.0, self.elu_alpha * np.exp(x_input_value))
 
     # --- Swish ---
     def swish_activ(self, x_input_value):
         y_output_value = x_input_value * (1 / (1 + np.exp(-x_input_value)))
         return y_output_value
 
-    def swish_deriv(self):
-        return
+    def swish_deriv(self, x_input_value):
+        sigmoid_value = self.sigmoid_activ(x_input_value)
+        return sigmoid_value + x_input_value * sigmoid_value * (1 - sigmoid_value)
 
     # --- Softmax ---
     def softmax_activ(self, x_input_vector):
