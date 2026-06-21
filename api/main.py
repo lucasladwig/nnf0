@@ -76,11 +76,28 @@ class Rede:
         return
 
     # --- Parameter ReLU ---
-    def param_relu_activ(self):
-        return
+    def param_relu_activ(self, x: float, a: float) -> float:
+        """Parametric ReLU activation function.
+            Params:
+            x: input vector
+            a: linear constant for negative values (learned by the network)
+        """
+        return x if x > 0 else a * x
 
-    def param_relu_deriv(self):
-        return
+    def param_relu_deriv_x(self, x: float, a: float) -> float:
+        """Parametric ReLU derivative with regards to input 'x'.
+            Params:
+            x: input vector
+            a: linear constant for negative values (learned by the network)
+        """
+
+    def param_relu_deriv_a(self, x: float) -> float:
+        """Parametric ReLU derivative with regards to learned parameter 'a'.
+            Params:
+            x: input vector
+            a: linear constant for negative values (learned by the network)
+        """
+        return 0.0 if x > 0 else x
 
     # --- ELU ---
     def elu_activ(self):
