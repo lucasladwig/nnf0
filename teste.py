@@ -13,15 +13,9 @@ rede.create_hidden_layer(1, "sigmoid")
 
 
 print("testando feedforward")
+rede.set_cost_function("mean_squared_error") # define a função de custo como mean_squared_error
 input_vector = np.array([0.5, 0.2, 0.1, 0.2]) # exemplo de vetor de entrada para a rede
-output_vector = rede.feedforward(input_vector)
-print("último resultado da rede: ", output_vector)
-
-print("testando cost function")
-y_true = np.array([1]) # exemplo de vetor de saída verdadeira
-print("vetor de saída verdadeira: ", y_true)
-print("vetor de saída predita: ", output_vector)
-print("diferença entre os vetores: ", y_true[0] - output_vector[0])
-y_pred = np.array([output_vector[0]])
-loss = rede.squared_error(y_pred, y_true)
-print("erro quadrático: ", loss)
+y_true_vector = np.array([1]) # exemplo de vetor de saída verdadeira
+output_vector, loss = rede.feedforward(input_vector, y_true_vector)
+print("output_vector: ", output_vector)
+print("loss: ", loss)

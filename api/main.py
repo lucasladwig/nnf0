@@ -22,7 +22,8 @@ class Rede:
              "tanh": self.tanh_deriv,
              "relu": self.relu_deriv,
              "leaky_relu": self.leaky_relu_deriv,
-             "parametric_relu": self.param_relu_deriv,
+             "parametric_relu_x": self.param_relu_deriv_x,
+             "parametric_relu_a": self.param_relu_deriv_a,
              "elu": self.elu_deriv,
              "swish": self.swish_deriv,
              "softmax": self.softmax_deriv
@@ -33,6 +34,7 @@ class Rede:
             "categoric_cross_entropy": self.categoric_cross_entropy
         }
         self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
+        self.chosen_cost_function = None
         self.layers_activation_func_list = []
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
         self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
@@ -194,9 +196,8 @@ class Rede:
         quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
         self.create_layer(num_neurons, func_name, quantity_of_inputs)
 
-    def create_output_layer(self, num_neurons: int, func_name: str, cost_func_name: str):
-        quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
-        self.create_layer(num_neurons, func_name, quantity_of_inputs)
+    def set_cost_function(self, cost_function_name: str):
+        self.chosen_cost_function = self.cost_functions[cost_function_name]
 
     def create_layer(self, num_neurons: int, func_name: str, quantity_of_inputs: int):
         w_matrix = [] # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
@@ -221,11 +222,16 @@ class Rede:
         return np.array(output_vector)
     
     # === FEED FORWARD ===
-    def feedforward(self, input_vector: np.array):
+    def feedforward(self, input_vector, y_true_vector):
         print("=== INICIANDO FEEDFORWARD ===")
         output_vector = input_vector
         print("input_vector da rede: ", output_vector)
         for layer_index in range(len(self.network)):
             output_vector = self.calc_layer_output(layer_index, output_vector)
             print("camada ", layer_index, " - output_vector: ", output_vector)
-        return output_vector
+        loss = self.get_loss(output_vector, y_true_vector)
+        return output_vector, loss
+     
+    def get_loss(self, y_predicted_vector, y_true_vector):
+        loss_value = self.chosen_cost_function(y_predicted_vector, y_true_vector)
+        return loss_value
