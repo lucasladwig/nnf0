@@ -99,6 +99,7 @@ class Rede:
             x: input vector
             a: linear constant for negative values (learned by the network)
         """
+        return 1.0 if x > 0 else a
 
     def param_relu_deriv_a(self, x: float) -> float:
         """Parametric ReLU derivative with regards to learned parameter 'a'.
