@@ -37,6 +37,8 @@ class Rede:
         self.elu_alpha = 1.0 # valor padrão para a elu. Basta mudar o valor do atributo.
         self.chosen_cost_function = None
         self.layers_activation_func_list = []
+        self.layer_inputs = [] # cache: vetor de entrada de cada camada (com bias), preenchido no feedforward e usado na backpropagation
+        self.layer_z = [] # cache: combinações lineares (pré-ativações) de cada camada, usadas na backpropagation
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
         self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
         self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
@@ -217,23 +219,31 @@ class Rede:
     def calc_layer_output(self, layer_index: int, input_vector: np.array):
         layer = self.network[layer_index] #pega a matriz de pesos da camada em questão
         func_name = self.layers_activation_func_list[layer_index]
+        z_vector = [] # combinações lineares (pré-ativações) de cada neurônio, necessárias na backpropagation
         output_vector = []
         for neuron_index in range(layer.shape[0]):
             linear_combination_neuron = (layer[neuron_index].dot(input_vector)) # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
+            z_vector.append(linear_combination_neuron) # guarda a pré-ativação antes de aplicar a função de ativação
             output_vector.append(self.activate_neuron(func_name, linear_combination_neuron)) # aplica a função de ativação à combinação linear, resultando na saída do neurônio
-        output_vector.append(1.0) # adiciona o valor do bias
-        return np.array(output_vector)
+        return np.array(output_vector), np.array(z_vector)
     
     # === FEED FORWARD ===
     def feedforward(self, input_vector, y_true_vector):
-        print("=== INICIANDO FEEDFORWARD ===")
-        output_vector = input_vector
-        print("input_vector da rede: ", output_vector)
+        self.layer_inputs = [] # zera o cache a cada passagem para frente
+        self.layer_z = []
+        current_input = input_vector
+        last_layer_index = len(self.network) - 1
         for layer_index in range(len(self.network)):
-            output_vector = self.calc_layer_output(layer_index, output_vector)
-            print("camada ", layer_index, " - output_vector: ", output_vector)
-        loss = self.get_loss(output_vector, y_true_vector)
-        return output_vector, loss
+            self.layer_inputs.append(current_input) # guarda a entrada desta camada (já com bias) para a backpropagation
+            output_vector, z_vector = self.calc_layer_output(layer_index, current_input)
+            self.layer_z.append(z_vector) # guarda as pré-ativações desta camada
+            if layer_index < last_layer_index:
+                current_input = np.append(output_vector, 1.0) # adiciona o bias apenas entre camadas, como entrada da próxima
+            else:
+                current_input = output_vector # camada de saída: a predição não recebe bias
+        prediction = current_input
+        loss = self.get_loss(prediction, y_true_vector)
+        return prediction, loss
      
     def get_loss(self, y_predicted_vector, y_true_vector):
         loss_value = self.chosen_cost_function(y_predicted_vector, y_true_vector)
