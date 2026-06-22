@@ -209,8 +209,20 @@ class Rede:
         return deriv_func(z_vector)
 
     # === GRADIENT DESCENT ===
-    def gradient_descent(self):
-        return
+    def gradient_descent(self, gradients):
+        """Atualiza os parâmetros da rede um passo na direção oposta ao gradiente.
+
+        gradients: lista de matrizes (uma por camada, no formato de self.network)
+        com os gradientes dos pesos vindos da back_propagation. Os alphas das
+        camadas parametric_relu são atualizados a partir de
+        self.param_relu_alpha_gradients, preenchido na mesma back_propagation.
+        """
+        for layer_index in range(len(self.network)):
+            # passo de descida nos pesos (o bias está embutido na última coluna da matriz)
+            self.network[layer_index] = self.network[layer_index] - self.learning_rate * gradients[layer_index]
+            # passo de descida no alpha aprendível, apenas nas camadas parametric_relu
+            if self.param_relu_alpha_gradients[layer_index] is not None:
+                self.param_relu_alphas[layer_index] = self.param_relu_alphas[layer_index] - self.learning_rate * self.param_relu_alpha_gradients[layer_index]
 
     # === NEURON LOGIC ===
     def linear_combination(self, k: int, w: np.array, x: np.array):
