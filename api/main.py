@@ -157,8 +157,37 @@ class Rede:
         return loss_value
 
     # === BACKPROPAGATION ===
-    def back_propagation(self):
-        return
+    def back_propagation(self, y_predicted_vector, y_true_vector):
+        # Calcula o gradiente da perda em relação aos pesos de cada camada.
+        # Usa o cache preenchido pelo feedforward: self.layer_inputs e self.layer_z.
+        # Retorna uma lista de matrizes de gradiente, uma por camada (mesmo formato de self.network).
+        num_layers = len(self.network)
+        gradients = [None] * num_layers
+        last_index = num_layers - 1
+
+        # --- erro (delta) da camada de saída ---
+        last_func_name = self.layers_activation_func_list[last_index]
+        if self.chosen_cost_function == self.squared_error:
+            # erro quadrático: dL/dy = 2*(y_pred - y_true), multiplicado por g'(z) da saída
+            last_deriv = self.activation_functions_deriv[last_func_name]
+            delta = 2 * (y_predicted_vector - y_true_vector) * last_deriv(self.layer_z[last_index])
+        else:
+            # entropia cruzada com sigmoide/softmax: o delta da saída simplifica para (y_pred - y_true)
+            delta = y_predicted_vector - y_true_vector
+
+        # --- percorre as camadas de trás para frente ---
+        for layer_index in reversed(range(num_layers)):
+            # gradiente desta camada = produto externo entre o delta e a entrada da camada (já com bias)
+            gradients[layer_index] = np.outer(delta, self.layer_inputs[layer_index])
+            if layer_index > 0:
+                # propaga o erro para a camada anterior
+                propagated_error = self.network[layer_index].T.dot(delta) # tamanho = nº de entradas + bias
+                propagated_error = propagated_error[:-1] # descarta a linha do bias (o bias não é um neurônio)
+                prev_func_name = self.layers_activation_func_list[layer_index - 1]
+                prev_deriv = self.activation_functions_deriv[prev_func_name]
+                delta = propagated_error * prev_deriv(self.layer_z[layer_index - 1]) # multiplica pela inclinação da ativação
+
+        return gradients
 
     # === GRADIENT DESCENT ===
     def gradient_descent(self):
