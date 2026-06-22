@@ -219,6 +219,32 @@ def test_gradient_descent_reduz_loss():
     print(f"[OK] gradient_descent reduziu a perda: {loss_antes:.6f} -> {loss_depois:.6f}")
 
 
+def test_train_aprende_funcao_and():
+    """O laço de treino completo deve fazer a rede aprender: ao treinar a função
+    lógica AND, a perda média por época deve cair de forma consistente. Exercita
+    feedforward -> back_propagation -> gradient_descent por época e o histórico
+    de perdas devolvido por train.
+    """
+    np.random.seed(0)
+    atributes = np.array([[0.0, 0.0],
+                          [0.0, 1.0],
+                          [1.0, 0.0],
+                          [1.0, 1.0]])
+    labels = np.array([[0.0], [0.0], [0.0], [1.0]])  # AND
+
+    rede = Rede(0.5, atributes=atributes, labels=labels)
+    rede.weights_initialization_mode = "random"
+    rede.create_initial_layer(1, "sigmoid")  # 1 neurônio sigmoide (saída) -> matriz (1, 3)
+    rede.set_cost_function("mean_squared_error")
+
+    history = rede.train(epochs=500)
+
+    assert len(history) == 500, len(history)
+    assert history[-1] < history[0], (history[0], history[-1])  # a perda caiu ao longo do treino
+    assert history[-1] < 0.05, history[-1]                      # aprendeu AND razoavelmente bem
+    print(f"[OK] train aprendeu a função AND: perda {history[0]:.4f} -> {history[-1]:.4f}")
+
+
 if __name__ == "__main__":
     test_backpropagation_valores_de_referencia()
     test_backpropagation_gradient_check()
@@ -226,4 +252,5 @@ if __name__ == "__main__":
     test_parametric_relu_forward()
     test_parametric_relu_gradient_check()
     test_gradient_descent_reduz_loss()
+    test_train_aprende_funcao_and()
     print("Todos os testes passaram.")
