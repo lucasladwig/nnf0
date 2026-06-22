@@ -45,6 +45,7 @@ class Rede:
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
         self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
         self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
+        self.loss_history = [] # perda média por época, preenchida no train para os notebooks plotarem
 
     # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
     # --- Linear ---
@@ -223,6 +224,29 @@ class Rede:
             # passo de descida no alpha aprendível, apenas nas camadas parametric_relu
             if self.param_relu_alpha_gradients[layer_index] is not None:
                 self.param_relu_alphas[layer_index] = self.param_relu_alphas[layer_index] - self.learning_rate * self.param_relu_alpha_gradients[layer_index]
+
+    # === TRAINING ===
+    def train(self, epochs: int):
+        """Treina a rede por um número de épocas com descida de gradiente estocástica.
+
+        A cada época percorre todas as amostras de self.atributes/self.labels,
+        encadeando feedforward -> back_propagation -> gradient_descent por amostra.
+        Registra a perda média de cada época em self.loss_history (para os notebooks
+        plotarem) e a retorna.
+        """
+        self.loss_history = []
+        num_samples = self.atributes.shape[0]
+        for _ in range(epochs):
+            epoch_loss = 0.0
+            for sample_index in range(num_samples):
+                x = np.append(self.atributes[sample_index], 1.0) # adiciona o slot do bias (=1.0) à entrada
+                y = self.labels[sample_index]
+                prediction, loss = self.feedforward(x, y)
+                epoch_loss += loss
+                gradients = self.back_propagation(prediction, y)
+                self.gradient_descent(gradients)
+            self.loss_history.append(epoch_loss / num_samples) # perda média da época
+        return self.loss_history
 
     # === NEURON LOGIC ===
     def linear_combination(self, k: int, w: np.array, x: np.array):
