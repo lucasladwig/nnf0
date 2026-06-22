@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Rede:
-    def __init__(self, learning_rate: float, atributes = None, labels = None):
+    def __init__(self, learning_rate: float, atributes=None, labels=None):
         self.network = []
         self.learning_rate = learning_rate
         self.activation_functions = {
@@ -17,24 +17,26 @@ class Rede:
             "softmax": self.softmax_activ
         }
         self.activation_functions_deriv = {
-             "linear": self.linear_deriv,
-             "sigmoid": self.sigmoid_deriv,
-             "tanh": self.tanh_deriv,
-             "relu": self.relu_deriv,
-             "leaky_relu": self.leaky_relu_deriv,
-             "parametric_relu_x": self.param_relu_deriv_x,
-             "parametric_relu_a": self.param_relu_deriv_a,
-             "elu": self.elu_deriv,
-             "swish": self.swish_deriv,
-             "softmax": self.softmax_deriv
+            "linear": self.linear_deriv,
+            "sigmoid": self.sigmoid_deriv,
+            "tanh": self.tanh_deriv,
+            "relu": self.relu_deriv,
+            "leaky_relu": self.leaky_relu_deriv,
+            "parametric_relu_x": self.param_relu_deriv_x,
+            "parametric_relu_a": self.param_relu_deriv_a,
+            "elu": self.elu_deriv,
+            "swish": self.swish_deriv,
+            "softmax": self.softmax_deriv
         }
         self.cost_functions = {
             "mean_squared_error": self.squared_error,
             "binary_cross_entropy": self.binary_cross_entropy,
             "categoric_cross_entropy": self.categoric_cross_entropy
         }
-        self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
-        self.elu_alpha = 1.0 # valor padrão para a elu. Basta mudar o valor do atributo.
+        # valor padrão para a leaky relu. Basta mudar o valor do atributo.
+        self.leaky_relu_apha = 0.01
+        # valor padrão para a elu. Basta mudar o valor do atributo.
+        self.elu_alpha = 1.0
         self.chosen_cost_function = None
         self.layers_activation_func_list = []
         self.layer_inputs = [] # cache: vetor de entrada de cada camada (com bias), preenchido no feedforward e usado na backpropagation
@@ -149,7 +151,8 @@ class Rede:
         return loss_value
 
     def binary_cross_entropy(self, y_predicted_vector, y_true_vector):
-        loss_value = -(y_true_vector[0] * np.log(y_predicted_vector[0]) + ((1 - y_true_vector[0]) * np.log(1 - y_predicted_vector[0])))
+        loss_value = -(y_true_vector[0] * np.log(y_predicted_vector[0]) + (
+            (1 - y_true_vector[0]) * np.log(1 - y_predicted_vector[0])))
         return loss_value
 
     def categoric_cross_entropy(self, y_predicted_vector, y_true_vector):
@@ -223,30 +226,35 @@ class Rede:
 
     # === LAYER LOGIC ===
     def create_initial_layer(self, num_neurons: int, func_name: str):
-        quantity_of_inputs = self.atributes.shape[1] + 1 # quantidade de atributos, mais 1 para o bias.
+        # quantidade de atributos, mais 1 para o bias.
+        quantity_of_inputs = self.atributes.shape[1] + 1
         self.create_layer(num_neurons, func_name, quantity_of_inputs)
 
     def create_hidden_layer(self, num_neurons: int, func_name: str):
-        quantity_of_inputs = len(self.network[-1]) + 1 # quantidade de neurônios da camada anterior, mais 1 para o bias.
+        # quantidade de neurônios da camada anterior, mais 1 para o bias.
+        quantity_of_inputs = len(self.network[-1]) + 1
         self.create_layer(num_neurons, func_name, quantity_of_inputs)
 
     def set_cost_function(self, cost_function_name: str):
         self.chosen_cost_function = self.cost_functions[cost_function_name]
 
     def create_layer(self, num_neurons: int, func_name: str, quantity_of_inputs: int):
-        w_matrix = [] # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
+        # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
+        w_matrix = []
         for neuron in range(num_neurons):
             if self.weights_initialization_mode == "zeros":
                 w_vector_aux = [0.0] * quantity_of_inputs
             else:
                 w_vector_aux = np.random.rand(quantity_of_inputs).tolist()
-            w_matrix.append(w_vector_aux) # lista de listas
-        camada = np.array(w_matrix, dtype=float) # transforma a lista de listas em matriz numpy, onde cada linha representa os pesos de um neurônio.
+            w_matrix.append(w_vector_aux)  # lista de listas
+        # transforma a lista de listas em matriz numpy, onde cada linha representa os pesos de um neurônio.
+        camada = np.array(w_matrix, dtype=float)
         self.network.append(camada)
         self.layers_activation_func_list.append(func_name)
-    
+
     def calc_layer_output(self, layer_index: int, input_vector: np.array):
-        layer = self.network[layer_index] #pega a matriz de pesos da camada em questão
+        # pega a matriz de pesos da camada em questão
+        layer = self.network[layer_index]
         func_name = self.layers_activation_func_list[layer_index]
         z_vector = [] # combinações lineares (pré-ativações) de cada neurônio, necessárias na backpropagation
         output_vector = []
@@ -275,5 +283,6 @@ class Rede:
         return prediction, loss
      
     def get_loss(self, y_predicted_vector, y_true_vector):
-        loss_value = self.chosen_cost_function(y_predicted_vector, y_true_vector)
+        loss_value = self.chosen_cost_function(
+            y_predicted_vector, y_true_vector)
         return loss_value
