@@ -33,14 +33,15 @@ class Rede:
             "binary_cross_entropy": self.binary_cross_entropy,
             "categoric_cross_entropy": self.categoric_cross_entropy
         }
-        # valor padrão para a leaky relu. Basta mudar o valor do atributo.
-        self.leaky_relu_apha = 0.01
-        # valor padrão para a elu. Basta mudar o valor do atributo.
-        self.elu_alpha = 1.0
+        self.vector_activation_functions = {"softmax"} # ativações aplicadas à camada inteira de uma vez, não neurônio a neurônio
+        self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
+        self.elu_alpha = 1.0 # valor padrão para a elu. Basta mudar o valor do atributo.
         self.chosen_cost_function = None
         self.layers_activation_func_list = []
         self.layer_inputs = [] # cache: vetor de entrada de cada camada (com bias), preenchido no feedforward e usado na backpropagation
         self.layer_z = [] # cache: combinações lineares (pré-ativações) de cada camada, usadas na backpropagation
+        self.param_relu_alphas = [] # alpha (a) aprendível por neurônio de cada camada parametric_relu; None nas demais camadas
+        self.param_relu_alpha_gradients = [] # gradiente do alpha por camada, preenchido na backpropagation para o gradient_descent usar
         self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
         self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
         self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
@@ -93,29 +94,28 @@ class Rede:
         return np.where(x_input_value > 0, 1.0, self.leaky_relu_apha)
 
     # --- Parameter ReLU ---
-    def param_relu_activ(self, x: float, a: float) -> float:
-        """Parametric ReLU activation function.
+    def param_relu_activ(self, x_input_vector, alpha_vector):
+        """Parametric ReLU activation function (vectorized over a layer).
             Params:
-            x: input vector
-            a: linear constant for negative values (learned by the network)
+            x_input_vector: pre-activations of the layer's neurons
+            alpha_vector: per-neuron learned slope for negative values
         """
-        return x if x > 0 else a * x
+        return np.where(x_input_vector > 0, x_input_vector, alpha_vector * x_input_vector)
 
-    def param_relu_deriv_x(self, x: float, a: float) -> float:
-        """Parametric ReLU derivative with regards to input 'x'.
+    def param_relu_deriv_x(self, x_input_vector, alpha_vector):
+        """Parametric ReLU derivative with regards to input 'x' (vectorized).
             Params:
-            x: input vector
-            a: linear constant for negative values (learned by the network)
+            x_input_vector: pre-activations of the layer's neurons
+            alpha_vector: per-neuron learned slope for negative values
         """
-        return 1.0 if x > 0 else a
+        return np.where(x_input_vector > 0, 1.0, alpha_vector)
 
-    def param_relu_deriv_a(self, x: float) -> float:
-        """Parametric ReLU derivative with regards to learned parameter 'a'.
+    def param_relu_deriv_a(self, x_input_vector):
+        """Parametric ReLU derivative with regards to learned parameter 'a' (vectorized).
             Params:
-            x: input vector
-            a: linear constant for negative values (learned by the network)
+            x_input_vector: pre-activations of the layer's neurons
         """
-        return 0.0 if x > 0 else x
+        return np.where(x_input_vector > 0, 0.0, x_input_vector)
 
     # --- ELU ---
     def elu_activ(self, x_input_value):
@@ -135,7 +135,8 @@ class Rede:
 
     # --- Softmax ---
     def softmax_activ(self, x_input_vector):
-        exp_values_vector = np.exp(x_input_vector)
+        # subtrai o máximo para estabilidade numérica (evita overflow no exp); por ser invariante a deslocamento, não altera o resultado
+        exp_values_vector = np.exp(x_input_vector - np.max(x_input_vector))
         exp_values_vector = exp_values_vector / np.sum(exp_values_vector)
         return exp_values_vector
 
@@ -164,33 +165,48 @@ class Rede:
         # Calcula o gradiente da perda em relação aos pesos de cada camada.
         # Usa o cache preenchido pelo feedforward: self.layer_inputs e self.layer_z.
         # Retorna uma lista de matrizes de gradiente, uma por camada (mesmo formato de self.network).
+        # Também preenche self.param_relu_alpha_gradients com o gradiente do alpha das camadas parametric_relu.
         num_layers = len(self.network)
         gradients = [None] * num_layers
+        self.param_relu_alpha_gradients = [None] * num_layers
         last_index = num_layers - 1
 
         # --- erro (delta) da camada de saída ---
-        last_func_name = self.layers_activation_func_list[last_index]
+        # upstream = dL/d(saída da camada): o gradiente que chega na saída, antes de multiplicar por g'(z)
         if self.chosen_cost_function == self.squared_error:
-            # erro quadrático: dL/dy = 2*(y_pred - y_true), multiplicado por g'(z) da saída
-            last_deriv = self.activation_functions_deriv[last_func_name]
-            delta = 2 * (y_predicted_vector - y_true_vector) * last_deriv(self.layer_z[last_index])
+            # erro quadrático: dL/dy = 2*(y_pred - y_true)
+            upstream = 2 * (y_predicted_vector - y_true_vector)
+            delta = upstream * self.calc_activation_deriv(last_index)
         else:
             # entropia cruzada com sigmoide/softmax: o delta da saída simplifica para (y_pred - y_true)
+            upstream = None
             delta = y_predicted_vector - y_true_vector
 
         # --- percorre as camadas de trás para frente ---
         for layer_index in reversed(range(num_layers)):
             # gradiente desta camada = produto externo entre o delta e a entrada da camada (já com bias)
             gradients[layer_index] = np.outer(delta, self.layer_inputs[layer_index])
+            # gradiente do alpha, se esta for uma camada parametric_relu (upstream = dL/d(saída) desta camada)
+            if self.layers_activation_func_list[layer_index] == "parametric_relu" and upstream is not None:
+                self.param_relu_alpha_gradients[layer_index] = upstream * self.param_relu_deriv_a(self.layer_z[layer_index])
             if layer_index > 0:
                 # propaga o erro para a camada anterior
                 propagated_error = self.network[layer_index].T.dot(delta) # tamanho = nº de entradas + bias
-                propagated_error = propagated_error[:-1] # descarta a linha do bias (o bias não é um neurônio)
-                prev_func_name = self.layers_activation_func_list[layer_index - 1]
-                prev_deriv = self.activation_functions_deriv[prev_func_name]
-                delta = propagated_error * prev_deriv(self.layer_z[layer_index - 1]) # multiplica pela inclinação da ativação
+                upstream = propagated_error[:-1] # descarta a linha do bias; é o dL/d(saída) da camada anterior
+                delta = upstream * self.calc_activation_deriv(layer_index - 1) # multiplica pela inclinação da ativação
 
         return gradients
+
+    def calc_activation_deriv(self, layer_index):
+        """Retorna g'(z) da camada, tratando a parametric_relu à parte porque sua
+        derivada depende do alpha (a) de cada neurônio, e não apenas da pré-ativação z.
+        """
+        func_name = self.layers_activation_func_list[layer_index]
+        z_vector = self.layer_z[layer_index]
+        if func_name == "parametric_relu":
+            return self.param_relu_deriv_x(z_vector, self.param_relu_alphas[layer_index])
+        deriv_func = self.activation_functions_deriv[func_name]
+        return deriv_func(z_vector)
 
     # === GRADIENT DESCENT ===
     def gradient_descent(self):
@@ -251,18 +267,34 @@ class Rede:
         camada = np.array(w_matrix, dtype=float)
         self.network.append(camada)
         self.layers_activation_func_list.append(func_name)
-
+        # parametric_relu: cada neurônio recebe seu próprio alpha (a) aprendível, iniciado em 0.25 (padrão da PReLU)
+        if func_name == "parametric_relu":
+            self.param_relu_alphas.append(np.full(num_neurons, 0.25))
+        else:
+            self.param_relu_alphas.append(None)
+    
     def calc_layer_output(self, layer_index: int, input_vector: np.array):
         # pega a matriz de pesos da camada em questão
         layer = self.network[layer_index]
         func_name = self.layers_activation_func_list[layer_index]
         z_vector = [] # combinações lineares (pré-ativações) de cada neurônio, necessárias na backpropagation
-        output_vector = []
         for neuron_index in range(layer.shape[0]):
             linear_combination_neuron = (layer[neuron_index].dot(input_vector)) # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
             z_vector.append(linear_combination_neuron) # guarda a pré-ativação antes de aplicar a função de ativação
-            output_vector.append(self.activate_neuron(func_name, linear_combination_neuron)) # aplica a função de ativação à combinação linear, resultando na saída do neurônio
-        return np.array(output_vector), np.array(z_vector)
+        z_vector = np.array(z_vector)
+        if func_name == "parametric_relu":
+            # parametric_relu depende do alpha (a) de cada neurônio: recebe o vetor de pré-ativações e os alphas da camada
+            output_vector = self.param_relu_activ(z_vector, self.param_relu_alphas[layer_index])
+        elif func_name in self.vector_activation_functions:
+            # ativações que dependem da camada inteira (ex.: softmax) recebem o vetor de pré-ativações completo
+            output_vector = self.activation_functions[func_name](z_vector)
+        else:
+            # ativações elemento a elemento: aplica a função de ativação a cada neurônio separadamente
+            output_vector = []
+            for z_value in z_vector:
+                output_vector.append(self.activate_neuron(func_name, z_value)) # aplica a função de ativação à pré-ativação, resultando na saída do neurônio
+            output_vector = np.array(output_vector)
+        return output_vector, z_vector
     
     # === FEED FORWARD ===
     def feedforward(self, input_vector, y_true_vector):
