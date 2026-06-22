@@ -33,6 +33,7 @@ class Rede:
             "binary_cross_entropy": self.binary_cross_entropy,
             "categoric_cross_entropy": self.categoric_cross_entropy
         }
+        self.vector_activation_functions = {"softmax"} # ativações aplicadas à camada inteira de uma vez, não neurônio a neurônio
         self.leaky_relu_apha = 0.01 # valor padrão para a leaky relu. Basta mudar o valor do atributo.
         self.elu_alpha = 1.0 # valor padrão para a elu. Basta mudar o valor do atributo.
         self.chosen_cost_function = None
@@ -133,7 +134,8 @@ class Rede:
 
     # --- Softmax ---
     def softmax_activ(self, x_input_vector):
-        exp_values_vector = np.exp(x_input_vector)
+        # subtrai o máximo para estabilidade numérica (evita overflow no exp); por ser invariante a deslocamento, não altera o resultado
+        exp_values_vector = np.exp(x_input_vector - np.max(x_input_vector))
         exp_values_vector = exp_values_vector / np.sum(exp_values_vector)
         return exp_values_vector
 
@@ -249,12 +251,20 @@ class Rede:
         layer = self.network[layer_index] #pega a matriz de pesos da camada em questão
         func_name = self.layers_activation_func_list[layer_index]
         z_vector = [] # combinações lineares (pré-ativações) de cada neurônio, necessárias na backpropagation
-        output_vector = []
         for neuron_index in range(layer.shape[0]):
             linear_combination_neuron = (layer[neuron_index].dot(input_vector)) # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
             z_vector.append(linear_combination_neuron) # guarda a pré-ativação antes de aplicar a função de ativação
-            output_vector.append(self.activate_neuron(func_name, linear_combination_neuron)) # aplica a função de ativação à combinação linear, resultando na saída do neurônio
-        return np.array(output_vector), np.array(z_vector)
+        z_vector = np.array(z_vector)
+        if func_name in self.vector_activation_functions:
+            # ativações que dependem da camada inteira (ex.: softmax) recebem o vetor de pré-ativações completo
+            output_vector = self.activation_functions[func_name](z_vector)
+        else:
+            # ativações elemento a elemento: aplica a função de ativação a cada neurônio separadamente
+            output_vector = []
+            for z_value in z_vector:
+                output_vector.append(self.activate_neuron(func_name, z_value)) # aplica a função de ativação à pré-ativação, resultando na saída do neurônio
+            output_vector = np.array(output_vector)
+        return output_vector, z_vector
     
     # === FEED FORWARD ===
     def feedforward(self, input_vector, y_true_vector):

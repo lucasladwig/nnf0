@@ -74,7 +74,34 @@ def test_backpropagation_gradient_check():
     assert maior_diferenca < 1e-6, maior_diferenca
 
 
+def test_softmax_camada_de_saida():
+    """A softmax deve operar sobre o vetor de pré-ativações da camada inteira,
+    produzindo uma distribuição de probabilidade (soma = 1), e não neurônio a
+    neurônio. Antes da correção, cada neurônio recebia um escalar e softmax(escalar)
+    = 1.0, fazendo a saída somar o número de neurônios em vez de 1.
+    """
+    rede = Rede(0.1, atributes=np.zeros((1, 2)), labels=np.zeros((1, 3)))
+    rede.create_initial_layer(3, "softmax")  # camada única de saída -> matriz (3, 3)
+    rede.network[0] = np.array([[1.0, 0.0, 0.0],
+                                [0.0, 1.0, 0.0],
+                                [0.0, 0.0, 1.0]])
+    rede.set_cost_function("categoric_cross_entropy")
+
+    x = np.array([1.0, 2.0, 1.0])  # 2 atributos + slot do bias (=1.0)
+    y = np.array([0.0, 1.0, 0.0])
+
+    prediction, _ = rede.feedforward(x, y)
+
+    z = rede.network[0].dot(x)
+    esperado = np.exp(z) / np.sum(np.exp(z))
+
+    assert np.isclose(np.sum(prediction), 1.0), np.sum(prediction)
+    assert np.allclose(prediction, esperado, atol=1e-9), prediction
+    print("[OK] softmax produz uma distribuição de probabilidade na camada de saída")
+
+
 if __name__ == "__main__":
     test_backpropagation_valores_de_referencia()
     test_backpropagation_gradient_check()
+    test_softmax_camada_de_saida()
     print("Todos os testes passaram.")
