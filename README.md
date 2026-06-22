@@ -4,6 +4,11 @@ Biblioteca de **redes neurais multicamadas (MLP) implementada do zero** em Pytho
 
 > **A rede neural em si foi implementada usando apenas `numpy`.** As bibliotecas `pandas` e `matplotlib` são usadas **somente nos notebooks**, para manipulação dos conjuntos de dados e plotagem de gráficos — elas não fazem parte do desenvolvimento da rede neural.
 
+Biblioteca desenvolvida por:
+- Lucas Ladwig (22100910) - [@lucas.ladwig](https://codigos.ufsc.br/lucas.ladwig)
+- Luis Felipe de Azambuja Feyh (22100913) - [@luis.felipe.feyh](https://codigos.ufsc.br/luis.felipe.feyh)
+- Luiz Fernando Aguilar Althoff (21202336) - [@luiz.fernando.althoff](https://codigos.ufsc.br/luiz.fernando.althoff)
+
 ## Recursos
 
 - **Arquitetura flexível** — número arbitrário de camadas, de neurônios por camada, função de ativação por camada e função de custo por rede.
