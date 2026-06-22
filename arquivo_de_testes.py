@@ -181,10 +181,49 @@ def test_parametric_relu_gradient_check():
     assert maior_diferenca < 1e-6, maior_diferenca
 
 
+def test_gradient_descent_reduz_loss():
+    """Um passo de gradient_descent deve mover os parâmetros na direção oposta ao
+    gradiente, reduzindo a perda na mesma amostra. Verifica que atualiza tanto os
+    pesos quanto os alphas aprendíveis da parametric_relu (e ignora as camadas sem
+    alpha, cujo gradiente fica None).
+    """
+    rede = Rede(0.1, atributes=np.zeros((1, 2)), labels=np.zeros((1, 1)))
+    rede.create_initial_layer(3, "parametric_relu")  # camada oculta PReLU -> (3, 3)
+    rede.create_hidden_layer(1, "sigmoid")           # camada de saída sigmoide -> (1, 4)
+    rede.set_cost_function("mean_squared_error")
+
+    rede.network[0] = np.array([[0.5, -0.3, 0.1],
+                                [-0.4, 0.2, -0.6],
+                                [0.3, 0.7, -0.2]])
+    rede.network[1] = np.array([[0.2, -0.5, 0.4, 0.1]])
+    rede.param_relu_alphas[0] = np.array([0.1, 0.25, 0.5])
+
+    x = np.array([0.7, -0.4, 1.0])  # 2 atributos + slot do bias
+    y = np.array([1.0])
+
+    prediction, loss_antes = rede.feedforward(x, y)
+    gradients = rede.back_propagation(prediction, y)
+
+    pesos_antes = rede.network[0].copy()
+    alphas_antes = rede.param_relu_alphas[0].copy()
+
+    rede.gradient_descent(gradients)
+
+    # os pesos e os alphas (das entradas negativas) foram de fato atualizados
+    assert not np.allclose(rede.network[0], pesos_antes), "pesos não foram atualizados"
+    assert not np.allclose(rede.param_relu_alphas[0], alphas_antes), "alphas não foram atualizados"
+
+    # a perda na mesma amostra diminuiu após o passo
+    _, loss_depois = rede.feedforward(x, y)
+    assert loss_depois < loss_antes, (loss_antes, loss_depois)
+    print(f"[OK] gradient_descent reduziu a perda: {loss_antes:.6f} -> {loss_depois:.6f}")
+
+
 if __name__ == "__main__":
     test_backpropagation_valores_de_referencia()
     test_backpropagation_gradient_check()
     test_softmax_camada_de_saida()
     test_parametric_relu_forward()
     test_parametric_relu_gradient_check()
+    test_gradient_descent_reduz_loss()
     print("Todos os testes passaram.")
