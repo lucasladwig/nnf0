@@ -39,12 +39,11 @@ class Rede:
         self.elu_alpha = 1.0
         self.chosen_cost_function = None
         self.layers_activation_func_list = []
-        # "zeros" por default, mas também admite "random"
-        self.weights_initialization_mode = "zeros"
-        # imagine que aqui tem um dataframe, porém sem a coluna de resposta
-        self.atributes = atributes
-        # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
-        self.labels = labels
+        self.layer_inputs = [] # cache: vetor de entrada de cada camada (com bias), preenchido no feedforward e usado na backpropagation
+        self.layer_z = [] # cache: combinações lineares (pré-ativações) de cada camada, usadas na backpropagation
+        self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
+        self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
+        self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
 
     # === ACTIVATION FUNCTIONS (AND DERIVATIVES) ===
     # --- Linear ---
@@ -161,8 +160,37 @@ class Rede:
         return loss_value
 
     # === BACKPROPAGATION ===
-    def back_propagation(self):
-        return
+    def back_propagation(self, y_predicted_vector, y_true_vector):
+        # Calcula o gradiente da perda em relação aos pesos de cada camada.
+        # Usa o cache preenchido pelo feedforward: self.layer_inputs e self.layer_z.
+        # Retorna uma lista de matrizes de gradiente, uma por camada (mesmo formato de self.network).
+        num_layers = len(self.network)
+        gradients = [None] * num_layers
+        last_index = num_layers - 1
+
+        # --- erro (delta) da camada de saída ---
+        last_func_name = self.layers_activation_func_list[last_index]
+        if self.chosen_cost_function == self.squared_error:
+            # erro quadrático: dL/dy = 2*(y_pred - y_true), multiplicado por g'(z) da saída
+            last_deriv = self.activation_functions_deriv[last_func_name]
+            delta = 2 * (y_predicted_vector - y_true_vector) * last_deriv(self.layer_z[last_index])
+        else:
+            # entropia cruzada com sigmoide/softmax: o delta da saída simplifica para (y_pred - y_true)
+            delta = y_predicted_vector - y_true_vector
+
+        # --- percorre as camadas de trás para frente ---
+        for layer_index in reversed(range(num_layers)):
+            # gradiente desta camada = produto externo entre o delta e a entrada da camada (já com bias)
+            gradients[layer_index] = np.outer(delta, self.layer_inputs[layer_index])
+            if layer_index > 0:
+                # propaga o erro para a camada anterior
+                propagated_error = self.network[layer_index].T.dot(delta) # tamanho = nº de entradas + bias
+                propagated_error = propagated_error[:-1] # descarta a linha do bias (o bias não é um neurônio)
+                prev_func_name = self.layers_activation_func_list[layer_index - 1]
+                prev_deriv = self.activation_functions_deriv[prev_func_name]
+                delta = propagated_error * prev_deriv(self.layer_z[layer_index - 1]) # multiplica pela inclinação da ativação
+
+        return gradients
 
     # === GRADIENT DESCENT ===
     def gradient_descent(self):
@@ -228,27 +256,32 @@ class Rede:
         # pega a matriz de pesos da camada em questão
         layer = self.network[layer_index]
         func_name = self.layers_activation_func_list[layer_index]
+        z_vector = [] # combinações lineares (pré-ativações) de cada neurônio, necessárias na backpropagation
         output_vector = []
         for neuron_index in range(layer.shape[0]):
-            # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
-            linear_combination_neuron = (layer[neuron_index].dot(input_vector))
-            # aplica a função de ativação à combinação linear, resultando na saída do neurônio
-            output_vector.append(self.activate_neuron(
-                func_name, linear_combination_neuron))
-        output_vector.append(1.0)  # adiciona o valor do bias
-        return np.array(output_vector)
-
+            linear_combination_neuron = (layer[neuron_index].dot(input_vector)) # multiplicação da linha de pesos do neurônio pelo vetor de entrada, resultando na combinação linear dos inputs para aquele neurônio
+            z_vector.append(linear_combination_neuron) # guarda a pré-ativação antes de aplicar a função de ativação
+            output_vector.append(self.activate_neuron(func_name, linear_combination_neuron)) # aplica a função de ativação à combinação linear, resultando na saída do neurônio
+        return np.array(output_vector), np.array(z_vector)
+    
     # === FEED FORWARD ===
     def feedforward(self, input_vector, y_true_vector):
-        print("=== INICIANDO FEEDFORWARD ===")
-        output_vector = input_vector
-        print("input_vector da rede: ", output_vector)
+        self.layer_inputs = [] # zera o cache a cada passagem para frente
+        self.layer_z = []
+        current_input = input_vector
+        last_layer_index = len(self.network) - 1
         for layer_index in range(len(self.network)):
-            output_vector = self.calc_layer_output(layer_index, output_vector)
-            print("camada ", layer_index, " - output_vector: ", output_vector)
-        loss = self.get_loss(output_vector, y_true_vector)
-        return output_vector, loss
-
+            self.layer_inputs.append(current_input) # guarda a entrada desta camada (já com bias) para a backpropagation
+            output_vector, z_vector = self.calc_layer_output(layer_index, current_input)
+            self.layer_z.append(z_vector) # guarda as pré-ativações desta camada
+            if layer_index < last_layer_index:
+                current_input = np.append(output_vector, 1.0) # adiciona o bias apenas entre camadas, como entrada da próxima
+            else:
+                current_input = output_vector # camada de saída: a predição não recebe bias
+        prediction = current_input
+        loss = self.get_loss(prediction, y_true_vector)
+        return prediction, loss
+     
     def get_loss(self, y_predicted_vector, y_true_vector):
         loss_value = self.chosen_cost_function(
             y_predicted_vector, y_true_vector)
