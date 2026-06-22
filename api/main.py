@@ -42,7 +42,7 @@ class Rede:
         self.layer_z = [] # cache: combinações lineares (pré-ativações) de cada camada, usadas na backpropagation
         self.param_relu_alphas = [] # alpha (a) aprendível por neurônio de cada camada parametric_relu; None nas demais camadas
         self.param_relu_alpha_gradients = [] # gradiente do alpha por camada, preenchido na backpropagation para o gradient_descent usar
-        self.weights_initialization_mode = "zeros" # "zeros" por default, mas também admite "random"
+        self.weights_initialization_mode = "default" # por default ele cria pesos com valores de indices, mas também admite "random"
         self.atributes = atributes # imagine que aqui tem um dataframe, porém sem a coluna de resposta
         self.labels = labels # imagine que aqui tem um dataframe, porém apenas com a coluna de resposta
         self.loss_history = [] # perda média por época, preenchida no train para os notebooks plotarem
@@ -294,8 +294,8 @@ class Rede:
         # inicia como lista comum. Cada linha aqui representa os pesos de um neurônio.
         w_matrix = []
         for neuron in range(num_neurons):
-            if self.weights_initialization_mode == "zeros":
-                w_vector_aux = [0.0] * quantity_of_inputs
+            if self.weights_initialization_mode == "default":
+                w_vector_aux = np.zeros(quantity_of_inputs).tolist()
             else:
                 w_vector_aux = np.random.rand(quantity_of_inputs).tolist()
             w_matrix.append(w_vector_aux)  # lista de listas

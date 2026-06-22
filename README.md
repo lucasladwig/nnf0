@@ -14,7 +14,7 @@ Biblioteca desenvolvida por:
 - **Arquitetura flexível** — número arbitrário de camadas, de neurônios por camada, função de ativação por camada e função de custo por rede.
 - **8 funções de ativação** (além da identidade), cada uma com sua derivada para o backpropagation: `sigmoid`, `tanh`, `relu`, `leaky_relu`, `parametric_relu` (com inclinação `a` aprendível por neurônio), `elu`, `swish` e `softmax`.
 - **3 funções de custo** — erro quadrático médio, entropia cruzada binária e entropia cruzada categórica.
-- **2 inicializações de pesos** — `zeros` e `random`.
+- **2 inicializações de pesos** — `default` (pega valores de índices) e `random`.
 - **Algoritmos de treino** — `feedforward`, `back_propagation` e `gradient_descent`, orquestrados por um laço de treino (`train`).
 
 ## Instalação
